@@ -118,7 +118,14 @@ Meters use a **separate UDP socket** (ephemeral port chosen by OS). The subscrip
 
 #### Discovery
 
-`scan()` broadcasts `"WING?"` over UDP to `255.255.255.255:2222`. Responses are CSV: `WING,ip,name,model,serial,firmware`. Retries up to 10 times on timeout (500ms each).
+`scan()` delegates to `src/discovery.rs`, which sends `"WING?"` over UDP to
+each active IPv4 interface's subnet broadcast address on port 2222. Loopback
+and point-to-point interfaces are excluded. Each probe uses a separate
+nonblocking socket bound to the local address; Apple platforms also use
+`IP_BOUND_IF` to avoid VPN default broadcast routes. Interface failures are
+isolated. Responses are CSV: `WING,ip,name,model,serial,firmware`, validated and
+deduplicated by IP address and serial number. All sockets share a five-second
+deadline, with early return when `stop_on_first` is true. See `Discovery.md`.
 
 #### Drop
 

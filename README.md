@@ -34,6 +34,27 @@ cargo build --all-targets
 Check out the code in the tools/ subdir for simple utilities that discovers,
 connects, and do various simple things with **libwing**.
 
+### Discovery with multiple interfaces or a VPN
+
+Starting in 1.0.6, automatic discovery probes every active IPv4 interface with a
+broadcast address, excluding loopback and point-to-point interfaces. Ethernet
+and Wi-Fi can both find the same mixer; duplicate replies are merged. On Apple
+platforms, discovery sockets are explicitly bound to their interfaces so a VPN
+default route does not capture the broadcasts.
+
+`WingConsole::scan(false)` collects replies within one shared five-second
+deadline. `WingConsole::scan(true)` returns after finding the first mixer, and
+`WingConsole::connect(None)` uses that automatic discovery. No API changes are
+needed in existing Rust or C callers.
+
+Discovery only finds mixers on directly attached broadcast networks. After
+discovery, the TCP connection still uses the system routing table: if a VPN
+blocks LAN connections, enable its LAN-access setting or adjust its routing.
+You can also bypass discovery with `WingConsole::connect(Some("192.168.1.100"))`.
+
+See [Discovery.md](Discovery.md) for protocol and troubleshooting details, and
+[CHANGELOG.md](CHANGELOG.md) for release notes.
+
 ## FFI/C API
 
 The library provides a complete C API through FFI bindings. This allows

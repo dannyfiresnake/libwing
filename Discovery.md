@@ -1,7 +1,44 @@
-# Behringer Wing Digial Mixer Discovery Protocol
+# Behringer Wing Digital Mixer Discovery Protocol
 
 This simple protocol allows a client on the network to discover Wing devices on
 the network. **libwing** implements this discovery protocol.
+
+`WingConsole::scan()` probes each active IPv4 interface with a broadcast address,
+excluding loopback and point-to-point interfaces. It sends to each interface's
+subnet broadcast address; on Apple platforms the socket is also explicitly bound
+to that interface so VPN default routes cannot capture discovery. An interface
+failure does not prevent discovery on the others. Replies are deduplicated by
+IP address and serial number, and all interfaces share a five-second deadline
+(`scan(true)` returns as soon as a mixer is found).
+
+## VPNs and multiple network interfaces
+
+Earlier versions sent one broadcast to `255.255.255.255` using the system's
+default route. A VPN can claim that route even when it allows connections to
+specific LAN addresses. In that case, connecting to a known mixer IP can work
+while discovery fails.
+
+Starting in 1.0.6, each eligible interface has a separate nonblocking socket,
+bound to its local IPv4 address, which sends `WING?` to its subnet broadcast
+address. On Apple platforms, `IP_BOUND_IF` additionally pins the socket to the
+interface; binding only the local address is insufficient to override the VPN
+broadcast route there. Other platforms use the local address and subnet
+broadcast route. This change has been tested with live hardware on macOS.
+
+All probes are sent before collecting replies. A failed interface does not
+abort probes on other interfaces. If every eligible probe fails, the scan
+returns an I/O error; if there are no eligible interfaces, it returns an empty
+list. Valid replies contain a `WING` prefix, an IPv4 address, and the remaining
+device fields. Repeated replies with the same IP address and serial number
+appear only once in the results.
+
+The scan does not relay broadcasts through routers or establish a tunnel to a
+remote mixer. The subsequent TCP connection still follows normal OS routing.
+If discovery works but connection fails, check that the VPN permits LAN access
+and that TCP port 2222 is reachable. A known mixer IP can be supplied to
+`WingConsole::connect(Some("192.168.1.100"))` to bypass discovery.
+
+## Wire protocol
 
 To discover a Wing device on your network, send a 5 byte UDP packet containing
 the following bytes to your network broadcast IP on UDP port 2222.

@@ -28,17 +28,26 @@
 //! ### Connecting
 //! If you have a Wing's IP address, you can connect to it:
 //!
-//! ```rust
-//! WingConsole wing = WingConsole::connect(Some("192.168.1.100"));
+//! ```no_run
+//! use libwing::WingConsole;
+//! let wing = WingConsole::connect(Some("192.168.1.100"))?;
+//! # Ok::<(), libwing::Error>(())
 //! ```
 //!
 //! or just run with no IP address to discover the first Wing console on the network:
 //!
-//! ```rust
-//! WingConsole wing = WingConsole::connect(None);
+//! ```no_run
+//! use libwing::WingConsole;
+//! let wing = WingConsole::connect(None)?;
+//! # Ok::<(), libwing::Error>(())
 //! ```
 //!
 //! There is also `WingConsole::scan()` which can be used to scan for Wing mixers.
+//! It probes all active IPv4 broadcast interfaces except loopback and
+//! point-to-point interfaces, merges duplicate replies, and uses a shared
+//! five-second deadline. On Apple platforms, sockets are explicitly bound to
+//! their interfaces so VPN default routes do not capture discovery broadcasts.
+//! The subsequent TCP connection still requires the VPN to permit LAN access.
 //!
 //! ### Communication Model
 //!
@@ -72,6 +81,7 @@
 
 
 mod console;
+mod discovery;
 mod node;
 mod ffi;
 mod propmap;

@@ -85,42 +85,21 @@ pub struct WingConsole {
 }
 
 impl WingConsole {
+    /// Discover mixers on active IPv4 broadcast interfaces.
+    ///
+    /// Probes each eligible interface, excluding loopback and point-to-point
+    /// interfaces. Duplicate replies are merged by IP address and serial number.
+    /// All interfaces share a five-second deadline; `stop_on_first` returns as
+    /// soon as one mixer is found. One interface's failure does not prevent
+    /// discovery on the others. Apple platforms explicitly bind each socket to
+    /// its interface to avoid VPN default broadcast routes.
+    ///
+    /// Returns an empty list when no mixer responds or no interface is eligible.
+    /// Returns an error if interface enumeration fails or every eligible probe
+    /// fails. Discovery is limited to directly attached broadcast networks; a
+    /// subsequent connection still follows normal system routing.
     pub fn scan(stop_on_first: bool) -> Result<Vec<DiscoveryInfo>> {
-        let dsock = UdpSocket::bind("0.0.0.0:0")?;
-        dsock.set_broadcast(true)?;
-        dsock.set_read_timeout(Some(Duration::from_millis(500))).unwrap();
-
-        let mut results = Vec::new();
-        let mut attempts = 0;
-
-        dsock.send_to(b"WING?", "255.255.255.255:2222")?;
-        while attempts < 10 {
-            let mut buf = [0u8; 1024];
-            match dsock.recv_from(&mut buf) {
-                Ok((received, _)) => {
-                    if let Ok(response) = String::from_utf8(buf[..received].to_vec()) {
-                        let tokens: Vec<&str> = response.split(',').collect();
-                        if tokens.len() >= 6 && tokens[0] == "WING" {
-                            results.push(DiscoveryInfo {
-                                ip:       tokens[1].to_string(),
-                                name:     tokens[2].to_string(),
-                                model:    tokens[3].to_string(),
-                                serial:   tokens[4].to_string(),
-                                firmware: tokens[5].to_string(),
-                            });
-                            if stop_on_first {
-                                break;
-                            }
-                        }
-                    }
-                }
-                Err(_) => {
-                    attempts += 1;
-                }
-            }
-        }
-
-        Ok(results)
+        crate::discovery::scan(stop_on_first)
     }
 
     pub fn connect(host_or_ip: Option<&str>) -> Result<Self> {

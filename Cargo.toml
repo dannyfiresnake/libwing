@@ -1,6 +1,6 @@
 [package]
 name = "libwing"
-version = "1.0.5"
+version = "1.0.6"
 license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/dannyfiresnake/libwing"
@@ -13,7 +13,8 @@ name = "libwing"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-socket2 = "0.5"
+socket2 = { version = "0.5.8", features = ["all"] }
+if-addrs = "0.15"
 lazy_static = "1.4"
 jzon = "0.12.5"
 thiserror = "2.0.11"
