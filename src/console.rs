@@ -617,8 +617,8 @@ impl WingConsole {
             buf.push(value as u8);
         } else if (-32768..=32767).contains(&value) {
             buf.push(0xd3);
-            buf.push(bytes[0]);
-            buf.push(bytes[1]);
+            buf.push(bytes[2]);
+            buf.push(bytes[3]);
         } else {
             buf.push(0xd4);
             buf.push(bytes[0]);
